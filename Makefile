@@ -1,4 +1,5 @@
-OPENAPI_GENERATOR_VERSION = v3.3.4
+VERSION 					= $(git describe --always)
+OPENAPI_GENERATOR_VERSION 	= v3.3.4
 
 .PHONY: generate
 generate:
@@ -7,4 +8,4 @@ generate:
         -g go \
         -o /local \
         --additional-properties "packageName=redisenterprise" \
-        --additional-properties "packageVersion=0.1.0"
+        --additional-properties "packageVersion=$(VERSION)"
