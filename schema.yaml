@@ -1,0 +1,253 @@
+openapi: 3.0.2
+
+info:
+  title: redis
+  version: '1'
+
+paths:
+
+  /bdbs:
+
+    post:
+      summary: Create a database
+      operationId: createDatabase
+      tags:
+        - databases
+      requestBody:
+        description: Object describing the database configuration
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Database'
+      responses:
+        '200':
+          description: Database created sucsessfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '400':
+          description: Invalid configuration parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Redis Labs license expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '406':
+          description: Invalid configuration parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Database with same UID already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bdbs/{uid}:
+
+    get:
+      summary: Get a database by id
+      operationId: getDatabase
+      tags:
+        - databases
+      parameters:
+        - name: uid
+          required: true
+          in: path
+          description: The unique ID of the database
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The request is accepted and is being processed. The database state will be ‘active-change-pending’ until the request has been fully processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '400':
+          description: Invalid configuration parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '406':
+          description: Invalid configuration parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update database configuration by id
+      operationId: updateDatabase
+      tags:
+        - databases
+      parameters:
+        - name: uid
+          required: true
+          in: path
+          description: The unique ID of the database
+          schema:
+            type: integer
+      requestBody:
+        description: Object containing database fields to change
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Database'
+      responses:
+        '200':
+          description: An object describing the database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '400':
+          description: Invalid configuration parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Database does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a database by id
+      operationId: deleteDatabase
+      tags:
+        - databases
+      parameters:
+        - name: uid
+          required: true
+          in: path
+          description: The unique ID of the database
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Database created sucsessfully
+        '404':
+          description: Attempting to delete a non-existant database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '406':
+          description: The database is not in ‘active’ or ‘creation-failed’ state and cannot be deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Attempting to change a database while it is busy with another configuration change. In this context, this is a temporary condition and the request should be re-attempted late
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+
+    Database:
+      properties:
+        uid:
+          type: integer
+        status:
+          $ref: '#/components/schemas/DatabaseStatus'
+        name:
+          type: string
+        type:
+          type: string
+          enum: [redis]
+        port:
+          type: integer
+        memory_size:
+          type: integer
+          format: int64
+        sharding:
+          type: boolean
+        shards_count:
+          type: integer
+        shards_placement:
+          type: string
+          enum: [dense, sparse]
+        shard_key_regex:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseShardKeyRegexItem'
+        implicit_shard_key:
+          type: boolean
+        replication:
+          type: boolean
+
+    DatabaseStatus:
+      type: string
+      enum: [pending, active, active-change-pending, delete-pending, import-pending, creation-failed, recovery]
+
+    DatabaseShardKeyRegexItem:
+      required:
+        - regex
+      properties:
+        regex:
+          type: string
+
+    Error:
+      properties:
+        error_code:
+          type: string
+        description:
+          type: string
+
+
+  securitySchemes:
+
+    BasicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - BasicAuth: []
